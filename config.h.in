@@ -1,0 +1,10 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define PROJECT_NAME "@PROJECT_NAME@"
+#define PROJECT_VER  "@LoudGain_VERSION@"
+#define PROJECT_VER_MAJOR "@VERSION_MAJOR@"
+#define PROJECT_VER_MINOR "@VERSION_MINOR@"
+#define PROJECT_VER_PATCH "@VERSION_PATCH@"
+
+#endif

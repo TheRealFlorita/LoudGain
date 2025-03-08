@@ -1,70 +1,106 @@
-# loudgain CMakeLists.txt
-# Copyright (C) 2014 Alessandro Ghedini <alessandro@ghedini.me>
-# This file is released under the 2 clause BSD license, see COPYING
+cmake_minimum_required(VERSION 3.10)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(loudgain C CXX)
+project(LoudGain LANGUAGES C CXX)
 
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-SET(VERSION_MAJOR 0)
-SET(VERSION_MINOR 1)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-SET(loudgain_VERSION ${VERSION_MAJOR}.${VERSION_MINOR})
+set(VERSION_MAJOR 1)
+set(VERSION_MINOR 0)
+set(VERSION_PATCH 0)
 
-SET(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(LoudGain_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
-INCLUDE(FindPkgConfig)
+set(INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/install")
 
-PKG_CHECK_MODULES(LAVC libavcodec REQUIRED)
-PKG_CHECK_MODULES(LAVF libavformat REQUIRED)
-PKG_CHECK_MODULES(LAVR libavresample REQUIRED)
-PKG_CHECK_MODULES(LAVU libavutil REQUIRED)
-PKG_CHECK_MODULES(LTAG taglib REQUIRED)
+file(GLOB SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cpp" "include/*.hpp" "include/argparse/*.hpp")
 
-FIND_PACKAGE(EBUR128)
+add_executable(LoudGain ${SOURCES})
 
-IF (NOT EBUR128_FOUND)
-  MESSAGE(FATAL_ERROR "libebur128 not found.")
-ENDIF (NOT EBUR128_FOUND)
+configure_file("config.h.in" "config.h")
 
-FILE(GLOB SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.cc" "src/*.c")
+if (MSVC)
+    add_definitions(-DTAGLIB_STATIC -D_OS_WIN32_)
 
-ADD_EXECUTABLE(loudgain ${SOURCES})
+    include_directories(
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/argparse
+      ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ebur128/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taglib/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/include)
 
-INCLUDE_DIRECTORIES(
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
-  ${EBUR128_INCLUDE_DIRS}
-  ${LAVC_INCLUDE_DIRS}
-  ${LAVF_INCLUDE_DIRS}
-  ${LAVR_INCLUDE_DIRS}
-  ${LAVU_INCLUDE_DIRS}
-  ${LTAG_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}
-)
+    target_link_libraries(LoudGain
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taglib/lib/tag.lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ebur128/lib/ebur128.lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/bin/swresample.lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/bin/avformat.lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/bin/avcodec.lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/bin/avutil.lib)
 
-SET(LIBS )
+    set_target_properties(LoudGain PROPERTIES COMPILE_FLAGS "/EHsc /W4 /O2 /MT")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHsc /W4 /O2 /MT")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /W4 /O2 /MT")
+    install(TARGETS LoudGain DESTINATION ${INSTALL_PREFIX})
 
-TARGET_LINK_LIBRARIES(loudgain
-  ${EBUR128_LIBRARY}
-  ${LAVC_LIBRARIES}
-  ${LAVF_LIBRARIES}
-  ${LAVR_LIBRARIES}
-  ${LAVU_LIBRARIES}
-  ${LTAG_LIBRARIES}
-)
+elseif (MINGW)
+    add_definitions(-DTAGLIB_STATIC -D_OS_WIN32_)
 
-SET_TARGET_PROPERTIES(loudgain PROPERTIES
-  COMPILE_FLAGS "-Wall -pedantic -g"
-)
+    include_directories(
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/argparse
+      ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ebur128/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taglib/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/include)
 
-SET(CMAKE_C_FLAGS "-std=gnu99 -D_GNU_SOURCE")
+    target_link_libraries(LoudGain
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/taglib/lib/libtag.a
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ebur128/lib/libebur128.a
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/lib/libswresample.a
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/lib/libavformat.a
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/lib/libavcodec.a
+        ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/ffmpeg/lib/libavutil.a
+        bcrypt)
 
-SET(CMAKE_CXX_FLAGS "-std=gnu++11 -D_GNU_SOURCE")
+    set_target_properties(LoudGain PROPERTIES COMPILE_FLAGS "-Wall -Wextra -g -O3 -static")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -static")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -static")
+    install(TARGETS LoudGain DESTINATION ${INSTALL_PREFIX})
 
-INSTALL(TARGETS loudgain DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+elseif (UNIX)
+    add_definitions(-DTAGLIB_STATIC -D_OS_UNIX_)
 
-INSTALL(FILES
-  ${PROJECT_SOURCE_DIR}/docs/loudgain.1
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1
-)
+    find_package(PkgConfig)
+    find_package(Threads)
+    PKG_CHECK_MODULES(LAVC libavcodec REQUIRED)
+    PKG_CHECK_MODULES(LAVF libavformat REQUIRED)
+    PKG_CHECK_MODULES(LAVR libswresample REQUIRED)
+    PKG_CHECK_MODULES(LAVU libavutil REQUIRED)
+    PKG_CHECK_MODULES(LTAG taglib REQUIRED)
+    PKG_CHECK_MODULES(LEBU libebur128 REQUIRED)
+
+    include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/argparse
+        ${LEBU_INCLUDE_DIRS}
+        ${LAVC_INCLUDE_DIRS}
+        ${LAVF_INCLUDE_DIRS}
+        ${LAVR_INCLUDE_DIRS}
+        ${LAVU_INCLUDE_DIRS}
+        ${LTAG_INCLUDE_DIRS})
+
+    target_link_libraries(LoudGain
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${LEBU_LIBRARIES}
+        ${LAVC_LIBRARIES}
+        ${LAVF_LIBRARIES}
+        ${LAVR_LIBRARIES}
+        ${LAVU_LIBRARIES}
+        ${LTAG_LIBRARIES})
+
+    set_target_properties(LoudGain PROPERTIES COMPILE_FLAGS "-Wall -Wextra -g -O3")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    install(TARGETS LoudGain DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+endif()
