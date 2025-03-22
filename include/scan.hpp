@@ -124,13 +124,14 @@ public:
     bool scanFile(double pregain, bool verbose);
 
 #if defined(_WIN32) || defined(WIN32)
-    const wchar_t* getTagLibFilePath();
+    wchar_t* getTagLibFilePath();
 #else
     const char* getTagLibFilePath();
 #endif
 
 private:
     fs::path p;
+    std::wstring fp;
     bool scanFrame(ebur128_state *ebur128, AVFrame *frame, SwrContext *swr);
 
 };

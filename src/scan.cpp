@@ -108,9 +108,10 @@ fs::path AudioFile::filePath()
 }
 
 #if defined(_WIN32) || defined(WIN32)
-    const wchar_t* AudioFile::getTagLibFilePath()
+    wchar_t* AudioFile::getTagLibFilePath()
     {
-        return filePath().wstring().data();
+        fp = filePath().wstring();
+        return fp.data();
     }
 #else
     const char* AudioFile::getTagLibFilePath()

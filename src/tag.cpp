@@ -96,7 +96,7 @@
 void printFileError(fs::path path)
 {
     std::stringstream err;
-    err << "Cannot open or read: " << TagLib::String(path) << std::endl;
+    err << "Cannot open or read file for tagging: " << TagLib::String(path) << std::endl;
     std::cerr << err.str();
     return;
 }
@@ -104,7 +104,7 @@ void printFileError(fs::path path)
 void printWriteError(fs::path path)
 {
     std::stringstream err;
-    err << "Cannot write to: " << TagLib::String(path) << std::endl;
+    err << "Cannot write to file for tagging: " << TagLib::String(path) << std::endl;
     std::cerr << err.str();
     return;
 }
@@ -112,21 +112,21 @@ void printWriteError(fs::path path)
 void printFormatError(fs::path path)
 {
     std::stringstream err;
-    err << "Cannot determine file format: " << TagLib::String(path) << std::endl;
+    err << "Cannot determine file format of file for tagging: " << TagLib::String(path) << std::endl;
     std::cerr << err.str();
 }
 
-void printCodecError(const AudioFile *audio_file)
+void printCodecError(AudioFile *audio_file)
 {
     std::stringstream err;
-    err << "Codec " << audio_file->avCodecId << " in " << audio_file->avFormat << " not supported" << std::endl;
+    err << "Codec " << audio_file->avCodecId << " in " << audio_file->avFormat << " not supported for tagging: " << TagLib::String(audio_file->filePath()) << std::endl;
     std::cerr << err.str();
 }
 
-void printTypeError(const AudioFile *audio_file)
+void printTypeError(AudioFile *audio_file)
 {
     std::stringstream err;
-    err << "File type not supported: " << audio_file->avFormat << std::endl;
+    err << "File type " << audio_file->avFormat << " not supported for tagging: " << TagLib::String(audio_file->filePath()) << std::endl;
     std::cerr << err.str();
 }
 
@@ -352,11 +352,7 @@ bool tag_remove_id3v2(TagLib::ID3v2::Tag *tag)
 // So we use the "lowercase" flag to switch.
 bool tag_present_mp3(AudioFile *audio_file, bool do_album, char mode)
 {
-#ifdef __unix__
-    TagLib::MPEG::File f(audio_file->filePath().c_str());
-#else
     TagLib::MPEG::File f(audio_file->getTagLibFilePath());
-#endif
 
     if (!f.isValid())
     {
