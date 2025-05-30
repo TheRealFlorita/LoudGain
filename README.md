@@ -13,10 +13,11 @@ LoudGain implements a subset of mp3gain's command-line options, which means that
 ## CHANGELOG
 
 **2025-03-08** forked from https://github.com/ghedo/loudgain.git.
-  * Includes all code changes from https://github.com/Moonbase59/loudgain.git up to version v0.6.8 (march 2025). I did not fork directly from this this repository because of its size (due to including static builds in commits).
+  * Includes all code changes from https://github.com/Moonbase59/loudgain.git up to version v0.6.8 (march 2025). I did not fork directly from this repository because of its size (due to including static builds in commits).
   * Applied a major refactor/rewrite of the above code.
   * Added Windows compatibility.
   * Added multi-threading support.
+  * If the correct ReplayGain tags are already present, the program doesn't overwrite the file after scanning.
   * Subfolders can now be included in the scan.
 
 ## GETTING STARTED
